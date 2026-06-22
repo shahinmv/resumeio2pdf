@@ -1,0 +1,15 @@
+# Generated résumé PDFs (may contain personal data — don't commit)
+*.pdf
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# Local debug Chrome profile
+.resumeio-dl/
+
+# The upstream repo this project was prototyped against (not part of this tool)
+resumeio2pdf_download/
