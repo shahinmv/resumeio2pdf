@@ -120,28 +120,62 @@ for (const k of ['workExperiences', 'educations', 'skills', 'languages', 'course
   if (!order.includes(k) && Array.isArray(j[k]) && j[k].length) { const h = renderKey(k); if (h) parts.push(h); }
 }
 
-// accent colour from the resume (resume.io tints headings/links); default near-black
+// ---------- measure the LIVE render so the vector adapts to THIS template ----------
+// (margins, body size, colours read from the rendered canvas; line-height derived
+//  from body via London's verified ratio — robust against pixel noise.)
+const MEXPR = `(()=>{try{
+  const cv=[...document.querySelectorAll('[data-testid=pdf-preview] canvas'),...document.querySelectorAll('canvas')].filter(c=>c.width>300&&c.height>300).sort((a,b)=>b.width-a.width)[0];
+  if(!cv)return JSON.stringify({error:1});
+  const W=cv.width,H=cv.height,D=cv.getContext('2d').getImageData(0,0,W,H).data;
+  const at=(x,y)=>{const i=(y*W+x)*4;return[D[i],D[i+1],D[i+2]];};
+  const lum=(r,g,b)=>r*0.3+g*0.59+b*0.11;
+  const dark=(x,y)=>{const[r,g,b]=at(x,y);return lum(r,g,b)<140?1:0;};
+  const rowInk=(y,a,b)=>{let n=0;for(let x=a;x<b;x++)n+=dark(x,y);return n;};
+  const colInk=(x,a,b)=>{let n=0;for(let y=a;y<b;y++)n+=dark(x,y);return n;};
+  const y0=Math.round(H*0.18),y1=Math.round(H*0.62);
+  let L=0,R=W-1;for(let x=0;x<W;x++){if(colInk(x,y0,y1)>8){L=x;break;}}for(let x=W-1;x>=0;x--){if(colInk(x,y0,y1)>8){R=x;break;}}
+  let T=0;for(let y=0;y<H;y++){if(rowInk(y,0,W)>4){T=y;break;}}
+  const bx0=Math.round(W*0.32),bx1=Math.round(W*0.93),bands=[];let cur=null;
+  for(let y=y0;y<y1;y++){const ink=rowInk(y,bx0,bx1);if(ink>3){if(!cur)cur={t:y,b:y};else cur.b=y;}else{if(cur){if(cur.b-cur.t>=3)bands.push(cur);cur=null;}}}
+  const bh=bands.map(b=>b.b-b.t).sort((a,b)=>a-b);const bandH=bh[Math.floor(bh.length/2)]||20;
+  const samp=(a,b,c2,d)=>{let r=0,g=0,bl=0,n=0;for(let y=a;y<b;y++)for(let x=c2;x<d;x+=2){const[R,G,B]=at(x,y);if(lum(R,G,B)<70){r+=R;g+=G;bl+=B;n++;}}return n?[Math.round(r/n),Math.round(g/n),Math.round(bl/n)]:[26,26,26];};
+  const hx=c=>'#'+c.map(v=>('0'+v.toString(16)).slice(-2)).join('');
+  const mm=px=>+(px*210/W).toFixed(2),css=px=>+(px*794.5/W).toFixed(2);
+  return JSON.stringify({sideMM:mm(L),topMM:mm(T),bodyCss:+(css(bandH)*1.18).toFixed(1),textColor:hx(samp(y0,y1,bx0,bx1)),nameColor:hx(samp(Math.max(0,T-2),T+Math.round(H*0.02),Math.round(W*0.25),Math.round(W*0.75)))});
+}catch(e){return JSON.stringify({error:String(e)});}})()`;
+let S=null;
+try { try{await c.send('Page.bringToFront');}catch{}; await ev(`(()=>{const p=document.querySelector('[data-testid=preview-previous-page-button]');let n=0;while(p&&!p.disabled&&n++<25)p.click();})()`, false); await sleep(900); S=JSON.parse(await ev(MEXPR, false)); } catch(e){}
+if (!S || S.error) S = null;
+const sat = h => { const m=/#(..)(..)(..)/.exec(h); if(!m) return false; const v=[1,2,3].map(i=>parseInt(m[i],16)); return (Math.max(...v)-Math.min(...v))>40; };
+const body = S ? Math.min(16, Math.max(9.5, S.bodyCss)) : 12.5;
+const sideMM = S ? Math.min(22, Math.max(8, S.sideMM)) : 16;
+const topMM = S ? Math.min(20, Math.max(8, S.topMM)) : 12;
+const nameSz=(body*1.28).toFixed(1), titleSz=(body*1.08).toFixed(1), labelSz=(body*0.84).toFixed(1), contactSz=(body*0.88).toFixed(1), posSz=body.toFixed(1);
+const textCol = (S && S.textColor) ? S.textColor : '#1a1a1a';
 let accent = '#1a1a1a';
 if (typeof j.color === 'string' && /^#?[0-9a-fA-F]{6}$/.test(j.color)) accent = j.color[0] === '#' ? j.color : '#' + j.color;
+else if (S && sat(S.nameColor)) accent = S.nameColor;
+else accent = textCol;
+console.log('style:', S ? `adapted to template (body ${body}px, margins ${sideMM}/${topMM}mm, text ${textCol}, accent ${accent})` : 'default London');
 const contact = [j.city, j.countryName, j.phoneNumber, j.email].filter(Boolean).map(esc).join(', ');
 const position = esc(j.position || j.jobTitle || '');
 
 const html = `<!doctype html><html><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(FONT)}:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"><style>
-:root{--accent:${accent}}
-@page{size:A4;margin:12mm 16mm}*{margin:0;padding:0;box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font-family:'${FONT}','Times New Roman',Times,serif;color:#1a1a1a;font-size:12.5px;line-height:1.19}a{color:var(--accent);text-decoration:none}
-.name{text-align:center;font-weight:700;font-size:16px;letter-spacing:.2px;color:var(--accent)}
-.position{text-align:center;font-size:12px;color:#333;margin-top:2px}
-.contact{text-align:center;font-size:11px;color:#333;margin:5px 0 4px}
+:root{--accent:${accent};--text:${textCol}}
+@page{size:A4;margin:${topMM}mm ${sideMM}mm}*{margin:0;padding:0;box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:'${FONT}','Times New Roman',Times,serif;color:var(--text);font-size:${body}px;line-height:1.19}a{color:var(--accent);text-decoration:none}
+.name{text-align:center;font-weight:700;font-size:${nameSz}px;letter-spacing:.2px;color:var(--accent)}
+.position{text-align:center;font-size:${posSz}px;color:#333;margin-top:2px}
+.contact{text-align:center;font-size:${contactSz}px;color:#333;margin:5px 0 4px}
 .sec{display:grid;grid-template-columns:23% 1fr;column-gap:14px;border-top:1px solid #dcdcdc;padding-top:9px;margin-top:9px}
 .sec:first-of-type{margin-top:9px}
-.label{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--accent);opacity:.92}
+.label{font-size:${labelSz}px;letter-spacing:1.3px;text-transform:uppercase;color:var(--accent);opacity:.92}
 .sec.dated>.label{grid-column:1/-1;margin-bottom:8px}.sec:not(.dated)>.label{grid-column:1}.col2{grid-column:2}
-.date{grid-column:1;font-size:10.5px;color:#555}.entry{grid-column:2;margin-bottom:13px;break-inside:avoid}.entry:last-child{margin-bottom:2px}
-.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.title{font-weight:700;font-size:13.5px;color:#1a1a1a;flex:1;min-width:0;overflow-wrap:break-word}
-.place{font-size:11px;color:#555;white-space:nowrap;flex:0 0 auto}.body{margin-top:3px;overflow-wrap:break-word}.body ul{padding-left:15px;margin:2px 0}.body li{margin:2px 0;padding-left:2px}.body p{margin:2px 0}
-.links a{font-size:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:6px}.cell{font-size:12px}.cell.lang{display:flex;justify-content:space-between;gap:8px}
-.lvl{color:#555}.catname{font-weight:700;font-size:12px;margin:4px 0 2px}.col2>.catname:first-child{margin-top:0}.ref{margin-bottom:6px}
+.date{grid-column:1;font-size:${labelSz}px;color:#555}.entry{grid-column:2;margin-bottom:13px;break-inside:avoid}.entry:last-child{margin-bottom:2px}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.title{font-weight:700;font-size:${titleSz}px;color:var(--text);flex:1;min-width:0;overflow-wrap:break-word}
+.place{font-size:${contactSz}px;color:#555;white-space:nowrap;flex:0 0 auto}.body{margin-top:3px;overflow-wrap:break-word}.body ul{padding-left:15px;margin:2px 0}.body li{margin:2px 0;padding-left:2px}.body p{margin:2px 0}
+.links a{font-size:${body}px}.grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:6px}.cell{font-size:${body}px}.cell.lang{display:flex;justify-content:space-between;gap:8px}
+.lvl{color:#555}.catname{font-weight:700;font-size:${body}px;margin:4px 0 2px}.col2>.catname:first-child{margin-top:0}.ref{margin-bottom:6px}
 </style></head><body><div class="name">${esc(j.firstName)} ${esc(j.lastName)}</div>${position ? `<div class="position">${position}</div>` : ''}<div class="contact">${contact}</div>${linksHtml}${parts.join('')}</body></html>`;
 
 // ---------- render to vector PDF ----------

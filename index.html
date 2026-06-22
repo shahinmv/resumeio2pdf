@@ -110,9 +110,33 @@ async function __grabData() {
     var m = location.pathname.match(/resumes\/(\d+)/);
     var id = m ? m[1] : null;
     if (!id){ var L = await (await fetch('/api/app/resumes', { credentials:'include' })).json(); id = (L.resumes && L.resumes[0] || {}).id; }
-    var txt = await (await fetch('/api/app/resumes/' + id, { credentials:'include' })).text();
-    await navigator.clipboard.writeText(txt);
-    alert('Copied your résumé data. Now switch to the PDF tool tab and paste it.');
+    var resume = await (await fetch('/api/app/resumes/' + id, { credentials:'include' })).json();
+    // measure the live render so the PDF adapts to THIS template (margins, size, colour)
+    var style = null;
+    try {
+      var cv = [].slice.call(document.querySelectorAll('[data-testid=pdf-preview] canvas')).concat([].slice.call(document.querySelectorAll('canvas'))).filter(function(c){return c.width>300&&c.height>300;}).sort(function(a,b){return b.width-a.width;})[0];
+      if (cv) {
+        var W=cv.width,H=cv.height,D=cv.getContext('2d').getImageData(0,0,W,H).data;
+        var at=function(x,y){var i=(y*W+x)*4;return [D[i],D[i+1],D[i+2]];};
+        var lum=function(r,g,b){return r*0.3+g*0.59+b*0.11;};
+        var dark=function(x,y){var c=at(x,y);return lum(c[0],c[1],c[2])<140?1:0;};
+        var rowInk=function(y,a,b){var n=0;for(var x=a;x<b;x++)n+=dark(x,y);return n;};
+        var colInk=function(x,a,b){var n=0;for(var y=a;y<b;y++)n+=dark(x,y);return n;};
+        var y0=Math.round(H*0.18),y1=Math.round(H*0.62),Lx=0,Rx=W-1,x,y;
+        for(x=0;x<W;x++){if(colInk(x,y0,y1)>8){Lx=x;break;}}
+        for(x=W-1;x>=0;x--){if(colInk(x,y0,y1)>8){Rx=x;break;}}
+        var T=0;for(y=0;y<H;y++){if(rowInk(y,0,W)>4){T=y;break;}}
+        var bx0=Math.round(W*0.32),bx1=Math.round(W*0.93),bands=[],cur=null;
+        for(y=y0;y<y1;y++){var ink=rowInk(y,bx0,bx1);if(ink>3){if(!cur)cur={t:y,b:y};else cur.b=y;}else{if(cur){if(cur.b-cur.t>=3)bands.push(cur);cur=null;}}}
+        var bh=bands.map(function(b){return b.b-b.t;}).sort(function(a,b){return a-b;});var bandH=bh[Math.floor(bh.length/2)]||20;
+        var samp=function(a,b,c2,d){var r=0,g=0,bl=0,n=0;for(var yy=a;yy<b;yy++)for(var xx=c2;xx<d;xx+=2){var c=at(xx,yy);if(lum(c[0],c[1],c[2])<70){r+=c[0];g+=c[1];bl+=c[2];n++;}}return n?[Math.round(r/n),Math.round(g/n),Math.round(bl/n)]:[26,26,26];};
+        var hx=function(c){return '#'+c.map(function(v){return ('0'+v.toString(16)).slice(-2);}).join('');};
+        var mm=function(px){return +(px*210/W).toFixed(2);},css=function(px){return +(px*794.5/W).toFixed(2);};
+        style={sideMM:mm(Lx),topMM:mm(T),bodyCss:+(css(bandH)*1.18).toFixed(1),textColor:hx(samp(y0,y1,bx0,bx1)),nameColor:hx(samp(Math.max(0,T-2),T+Math.round(H*0.02),Math.round(W*0.25),Math.round(W*0.75)))};
+      }
+    } catch(e){}
+    await navigator.clipboard.writeText(JSON.stringify({ resume: resume, style: style }));
+    alert('Copied your résumé' + (style ? ' (matched to your template)' : '') + '. Switch to the PDF tool tab and paste.');
     window.open('https://shahinmv.github.io/resumeio2pdf/', '_blank');
   } catch(e){ alert('Make sure you are logged into resume.io and on your résumé. ' + e); }
 }
@@ -137,7 +161,7 @@ const dated=(l,rows)=>{rows=rows.filter(r=>r.title||r.body||r.date);return rows.
 const plain=(l,c)=>c&&c.trim()?`<section class="sec"><div class="label">${esc(l)}</div><div class="col2">${c}</div></section>`:'';
 const grid2=cs=>{cs=cs.filter(Boolean);return cs.length?`<div class="grid2">${cs.join('')}</div>`:'';};
 const TITLES={profile:'Profile',workExperiences:'Employment History',educations:'Education',socialProfiles:'Links',skills:'Skills',languages:'Languages',hobbies:'Hobbies',courses:'Courses',internships:'Internships',activities:'Extra-curricular Activities',conferences:'Conferences',volunteerings:'Volunteering',references:'References',awards:'Awards',publications:'Publications',accomplishments:'Accomplishments',licensesAndCertifications:'Certifications',affiliations:'Affiliations'};
-function renderResume(j){
+function renderResume(j, style){
   const ST=j.sectionTitles||{};
   const T=k=>esc(ST[k]||TITLES[k]||k.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase()));
   const R=k=>{
@@ -158,10 +182,20 @@ function renderResume(j){
   const order=(j.sectionsOrder&&j.sectionsOrder.length)?j.sectionsOrder:['profile','workExperiences','educations','socialProfiles','skills','languages'];
   const parts=order.filter(k=>k!=='socialProfiles').map(R).filter(Boolean);
   for(const k of ['workExperiences','educations','skills','languages','courses','internships','activities','volunteerings','references','licensesAndCertifications','awards','publications','hobbies']){if(!order.includes(k)&&Array.isArray(j[k])&&j[k].length){const h=R(k);if(h)parts.push(h);}}
-  let accent='#1a1a1a';if(typeof j.color==='string'&&/^#?[0-9a-fA-F]{6}$/.test(j.color))accent=j.color[0]==='#'?j.color:'#'+j.color;
+  // adapt to the measured template style (or fall back to verified London defaults)
+  const sat=h=>{const m=/#(..)(..)(..)/.exec(h);if(!m)return false;const v=[1,2,3].map(i=>parseInt(m[i],16));return (Math.max(...v)-Math.min(...v))>40;};
+  const bz = style ? Math.min(16,Math.max(9.5,style.bodyCss)) : 12.5;
+  const sideMM = style ? Math.min(22,Math.max(8,style.sideMM)) : 16;
+  const topMM = style ? Math.min(20,Math.max(8,style.topMM)) : 12;
+  const nameSz=(bz*1.28).toFixed(1),titleSz=(bz*1.08).toFixed(1),labelSz=(bz*0.84).toFixed(1),contactSz=(bz*0.88).toFixed(1),posSz=bz.toFixed(1);
+  const textCol=(style&&style.textColor)?style.textColor:'#1a1a1a';
+  let accent='#1a1a1a';
+  if(typeof j.color==='string'&&/^#?[0-9a-fA-F]{6}$/.test(j.color))accent=j.color[0]==='#'?j.color:'#'+j.color;
+  else if(style&&sat(style.nameColor))accent=style.nameColor;
+  else accent=textCol;
   const contact=[j.city,j.countryName,j.phoneNumber,j.email].filter(Boolean).map(esc).join(', ');
   const position=esc(j.position||j.jobTitle||'');
-  const CSS=`@page{size:A4;margin:12mm 16mm}*{margin:0;padding:0;box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:'Tinos','Times New Roman',Times,serif;color:#1a1a1a;font-size:12.5px;line-height:1.19}a{color:${accent};text-decoration:none}.name{text-align:center;font-weight:700;font-size:16px;letter-spacing:.2px;color:${accent}}.position{text-align:center;font-size:12px;color:#333;margin-top:2px}.contact{text-align:center;font-size:11px;color:#333;margin:5px 0 4px}.sec{display:grid;grid-template-columns:23% 1fr;column-gap:14px;border-top:1px solid #dcdcdc;padding-top:9px;margin-top:9px}.sec:first-of-type{margin-top:9px}.label{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:${accent};opacity:.92}.sec.dated>.label{grid-column:1/-1;margin-bottom:8px}.sec:not(.dated)>.label{grid-column:1}.col2{grid-column:2}.date{grid-column:1;font-size:10.5px;color:#555}.entry{grid-column:2;margin-bottom:13px;break-inside:avoid}.entry:last-child{margin-bottom:2px}.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.title{font-weight:700;font-size:13.5px;color:#1a1a1a;flex:1;min-width:0;overflow-wrap:break-word}.place{font-size:11px;color:#555;white-space:nowrap;flex:0 0 auto}.body{margin-top:3px;overflow-wrap:break-word}.body ul{padding-left:15px;margin:2px 0}.body li{margin:2px 0;padding-left:2px}.body p{margin:2px 0}.links a{font-size:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:6px}.cell{font-size:12px}.cell.lang{display:flex;justify-content:space-between;gap:8px}.lvl{color:#555}.catname{font-weight:700;font-size:12px;margin:4px 0 2px}.ref{margin-bottom:6px}`;
+  const CSS=`@page{size:A4;margin:${topMM}mm ${sideMM}mm}*{margin:0;padding:0;box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:'Tinos','Times New Roman',Times,serif;color:${textCol};font-size:${bz}px;line-height:1.19}a{color:${accent};text-decoration:none}.name{text-align:center;font-weight:700;font-size:${nameSz}px;letter-spacing:.2px;color:${accent}}.position{text-align:center;font-size:${posSz}px;color:#333;margin-top:2px}.contact{text-align:center;font-size:${contactSz}px;color:#333;margin:5px 0 4px}.sec{display:grid;grid-template-columns:23% 1fr;column-gap:14px;border-top:1px solid #dcdcdc;padding-top:9px;margin-top:9px}.sec:first-of-type{margin-top:9px}.label{font-size:${labelSz}px;letter-spacing:1.3px;text-transform:uppercase;color:${accent};opacity:.92}.sec.dated>.label{grid-column:1/-1;margin-bottom:8px}.sec:not(.dated)>.label{grid-column:1}.col2{grid-column:2}.date{grid-column:1;font-size:${labelSz}px;color:#555}.entry{grid-column:2;margin-bottom:13px;break-inside:avoid}.entry:last-child{margin-bottom:2px}.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.title{font-weight:700;font-size:${titleSz}px;color:${textCol};flex:1;min-width:0;overflow-wrap:break-word}.place{font-size:${contactSz}px;color:#555;white-space:nowrap;flex:0 0 auto}.body{margin-top:3px;overflow-wrap:break-word}.body ul{padding-left:15px;margin:2px 0}.body li{margin:2px 0;padding-left:2px}.body p{margin:2px 0}.links a{font-size:${bz}px}.grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:6px}.cell{font-size:${bz}px}.cell.lang{display:flex;justify-content:space-between;gap:8px}.lvl{color:#555}.catname{font-weight:700;font-size:${bz}px;margin:4px 0 2px}.ref{margin-bottom:6px}`;
   const body=`<div class="name">${esc(j.firstName)} ${esc(j.lastName)}</div>${position?`<div class="position">${position}</div>`:''}<div class="contact">${contact}</div>${linksHtml}${parts.join('')}`;
   return {css:CSS,body};
 }
@@ -169,9 +203,9 @@ function generate(){
   const st=document.getElementById('status'); st.className='status'; st.textContent='';
   let raw=document.getElementById('json').value.trim();
   if(!raw){st.className='status err';st.textContent='Paste your résumé data first.';return;}
-  let j; try{ j=JSON.parse(raw); if(j.resume) j=j.resume; if(Array.isArray(j.resumes)) j=j.resumes[0]; }catch(e){ st.className='status err'; st.textContent='That does not look like valid résumé JSON.'; return; }
+  let j, style=null; try{ j=JSON.parse(raw); if(j&&j.resume&&j.resume.firstName!==undefined){ style=j.style||null; j=j.resume; } else { if(j.resume) j=j.resume; if(Array.isArray(j.resumes)) j=j.resumes[0]; } }catch(e){ st.className='status err'; st.textContent='That does not look like valid résumé JSON.'; return; }
   if(!j.firstName && !j.workExperiences && !j.educations){ st.className='status err'; st.textContent='Could not find résumé fields in that data.'; return; }
-  const {css,body}=renderResume(j);
+  const {css,body}=renderResume(j, style);
   const doc=`<!doctype html><html><head><meta charset="utf-8"><title>resume</title><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<scr`+`ipt>window.onload=function(){var go=function(){setTimeout(function(){window.print();},300);};if(document.fonts&&document.fonts.ready){document.fonts.ready.then(go);}else{setTimeout(go,800);}};<\/scr`+`ipt></body></html>`;
   const w=window.open('','_blank');
   if(!w){ st.className='status err'; st.textContent='Pop-up blocked — allow pop-ups and try again.'; return; }
