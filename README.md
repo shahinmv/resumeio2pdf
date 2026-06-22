@@ -8,13 +8,21 @@ resume.io lets you build and preview a résumé for free but charges to download
 
 **→ https://shahinmv.github.io/resumeio2pdf/**
 
-1. **Drag the "Grab my résumé" button** to your bookmarks bar (one time).
-2. Open your résumé on **resume.io** (logged in) and **click that bookmark** — it copies your résumé data to your clipboard.
-3. Back on the tool, **paste** and click **Download PDF**.
+Two one-click bookmarklets (drag either to your bookmarks bar once):
 
-You get a clean, true-vector, multi-page PDF with **selectable text** and **clickable links**, set in Times New Roman (resume.io's "London" font). Everything runs in your browser — **your data never leaves your device**, and there is no login on this site.
+**📸 Exact copy** — pixel-exact, *your* template, any design, no paste:
+1. Drag the **Exact résumé PDF** button to your bookmarks bar.
+2. Open your résumé on **resume.io** and click the bookmark.
+3. A print view opens — choose **“Save as PDF”**. Every page, exactly as resume.io shows it.
 
-> Why a bookmarklet? A website can't read your resume.io session (and shouldn't — that would mean handing over your login). The bookmarklet runs in *your* tab, in *your* session, and only hands the data to the page in your own browser.
+**📄 Vector copy** — crisp, tiny, selectable text + links (ATS-friendly), clean Times-New-Roman layout:
+1. Drag the **Grab my résumé** button to your bookmarks bar.
+2. On **resume.io**, click it — it copies your résumé data and opens the tool.
+3. **Paste** and click **Download PDF**.
+
+Everything runs in your browser — **your data never leaves your device**, and there is no login on this site.
+
+> Why bookmarklets? A website can't reach into your resume.io tab (cross-origin) or read your login — and shouldn't. The bookmarklet runs in *your* tab, in *your* session: the exact-copy one reads the rendered preview canvas, the vector one reads your résumé data. Nothing is sent to any server.
 
 ## 💻 Command-line version (advanced / pixel-exact)
 

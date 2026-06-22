@@ -7,65 +7,123 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0f1115; --card:#171a21; --line:#272b34; --txt:#e7e9ee; --mut:#9aa0ad; --accent:#5b8cff; }
+  :root { --bg:#0f1115; --card:#171a21; --line:#272b34; --txt:#e7e9ee; --mut:#9aa0ad; --accent:#5b8cff; --green:#54d18c; }
   * { box-sizing: border-box; }
   body { margin:0; font-family:Inter,system-ui,sans-serif; background:var(--bg); color:var(--txt); line-height:1.5; }
-  .wrap { max-width: 820px; margin: 0 auto; padding: 40px 20px 80px; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
   h1 { font-size: 28px; margin: 0 0 6px; }
-  .sub { color: var(--mut); margin: 0 0 28px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 22px; margin-bottom:18px; }
-  .step { display:flex; gap:14px; align-items:flex-start; }
-  .num { flex:0 0 28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; display:grid; place-items:center; font-size:14px; }
-  .step h3 { margin:0 0 4px; font-size:16px; }
-  .step p { margin:0; color:var(--mut); font-size:14px; }
-  .bm { display:inline-block; margin-top:10px; padding:9px 16px; background:#222734; border:1px solid var(--accent); border-radius:9px; color:var(--accent); font-weight:600; text-decoration:none; cursor:grab; }
-  textarea { width:100%; min-height:120px; margin-top:12px; background:#0c0e13; color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:12px; font-family:ui-monospace,Menlo,monospace; font-size:12px; resize:vertical; }
-  button { margin-top:12px; padding:12px 22px; background:var(--accent); color:#fff; border:0; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
+  .sub { color: var(--mut); margin: 0 0 26px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:18px; }
+  .tag { display:inline-block; font-size:12px; font-weight:600; padding:3px 9px; border-radius:20px; margin-bottom:10px; }
+  .tag.rec { background:rgba(84,209,140,.15); color:var(--green); }
+  .tag.alt { background:rgba(91,140,255,.15); color:var(--accent); }
+  h2 { font-size:19px; margin:0 0 4px; }
+  .desc { color:var(--mut); font-size:14px; margin:0 0 14px; }
+  ol { margin:0; padding-left:20px; color:var(--mut); font-size:14px; }
+  ol li { margin:6px 0; }
+  .bm { display:inline-block; margin:6px 0; padding:9px 16px; background:#222734; border:1px solid var(--accent); border-radius:9px; color:var(--accent); font-weight:600; text-decoration:none; cursor:grab; }
+  .bm.green { border-color:var(--green); color:var(--green); }
+  textarea { width:100%; min-height:96px; margin-top:10px; background:#0c0e13; color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:12px; font-family:ui-monospace,Menlo,monospace; font-size:12px; resize:vertical; }
+  button { margin-top:10px; padding:11px 20px; background:var(--accent); color:#fff; border:0; border-radius:10px; font-weight:700; font-size:15px; cursor:pointer; }
   .status { margin-top:10px; font-size:14px; color:var(--mut); min-height:20px; }
-  .ok { color:#54d18c; } .err { color:#ff6b6b; }
-  code { background:#0c0e13; padding:1px 6px; border-radius:5px; font-size:12.5px; }
+  .ok { color:var(--green); } .err { color:#ff6b6b; }
   a { color: var(--accent); }
-  .foot { color:var(--mut); font-size:13px; margin-top:30px; }
+  .foot { color:var(--mut); font-size:13px; margin-top:28px; }
+  kbd { background:#0c0e13; border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-size:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>resume.io → free PDF <span style="color:var(--mut);font-weight:400">(all pages)</span></h1>
-  <p class="sub">Export your own résumé as a clean, multi-page, selectable-text PDF — free. Runs entirely in your browser; your data never leaves your device.</p>
+  <p class="sub">Export your own résumé as a multi-page PDF — free. Everything runs in your browser; your data never leaves your device and there's no login here.</p>
 
   <div class="card">
-    <div class="step">
-      <div class="num">1</div>
-      <div>
-        <h3>Drag this button to your bookmarks bar</h3>
-        <p>One-time setup. It's a bookmarklet that reads your résumé while you're logged in.</p>
-        <a class="bm" id="bm" href="#">📄 Grab my résumé</a>
-      </div>
-    </div>
+    <span class="tag rec">Pixel-exact · any template · no paste</span>
+    <h2>📸 Exact copy of your template</h2>
+    <p class="desc">Captures your résumé exactly as resume.io shows it, every page. The crispness matches your screen (sharpest on a high-DPI/Retina display).</p>
+    <ol>
+      <li>Drag this to your bookmarks bar (once): <a class="bm green" id="bmExact" href="#">📸 Exact résumé PDF</a></li>
+      <li>Open your résumé on <b>resume.io</b> so the preview is visible, then click the bookmark.</li>
+      <li>It opens a print view — choose <b>“Save as PDF”</b>. Done.</li>
+    </ol>
   </div>
 
   <div class="card">
-    <div class="step">
-      <div class="num">2</div>
-      <div style="flex:1">
-        <h3>On resume.io, open your résumé and click the bookmarklet</h3>
-        <p>It copies your résumé data to the clipboard and brings you back here. Then paste below (⌘/Ctrl-V).</p>
-        <textarea id="json" placeholder="Paste your résumé data here (or click the bookmarklet on resume.io and it fills your clipboard)…"></textarea>
-        <button id="go">Download PDF</button>
-        <div class="status" id="status"></div>
-      </div>
-    </div>
+    <span class="tag alt">True vector · selectable text · ATS-friendly</span>
+    <h2>📄 Vector copy (selectable text + links)</h2>
+    <p class="desc">A crisp, tiny, searchable PDF in a clean Times-New-Roman layout (great for ATS). Same content; one standard layout rather than your exact template design.</p>
+    <ol>
+      <li>Drag this to your bookmarks bar (once): <a class="bm" id="bmData" href="#">📄 Grab my résumé</a></li>
+      <li>On <b>resume.io</b>, open your résumé and click the bookmark — it copies your data and brings you here.</li>
+      <li>Paste below (<kbd>⌘/Ctrl-V</kbd>) and click <b>Download PDF</b>.</li>
+    </ol>
+    <textarea id="json" placeholder="Paste your résumé data here…"></textarea>
+    <button id="go">Download vector PDF</button>
+    <div class="status" id="status"></div>
   </div>
 
   <p class="foot">
-    Want a pixel-exact copy of your template (image + searchable text)? Use the <a href="https://github.com/shahinmv/resumeio2pdf" target="_blank">command-line version</a>.
-    This tool only uses the free preview your browser already renders and your own résumé data; it never sees your login and doesn't bypass resume.io's payment. For personal use — please support resume.io if you rely on it.
+    Open-source: <a href="https://github.com/shahinmv/resumeio2pdf" target="_blank">github.com/shahinmv/resumeio2pdf</a>.
+    This tool uses only the free preview your browser already renders and your own résumé data; it never sees your login and doesn't bypass resume.io's payment. For personal use — please support resume.io if you rely on it.
   </p>
 </div>
 
 <script>
-// ---------- résumé renderer: resume.io JSON -> faithful "London" HTML (Times New Roman / Tinos) ----------
+/* ===================== BOOKMARKLET 1: pixel-exact capture (runs on resume.io) ===================== */
+async function __grabExact() {
+  try {
+    var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+    var counterEl = function(){ return document.querySelector('[data-testid=preview-page-counter]'); };
+    var total = function(){ var e=counterEl(); return e ? (parseInt(e.textContent.split('/')[1])||1) : 1; };
+    var current = function(){ var e=counterEl(); return e ? (parseInt(e.textContent.split('/')[0])||0) : 0; };
+    var grab = function(){
+      var cs = [].slice.call(document.querySelectorAll('[data-testid=pdf-preview] canvas'));
+      if (!cs.length) cs = [].slice.call(document.querySelectorAll('canvas')).filter(function(c){ return c.width>300 && c.height>300; });
+      return cs.map(function(c){ var d=c.toDataURL('image/jpeg',0.95); return { len:d.length, d:d }; });
+    };
+    var M = total();
+    var pv = document.querySelector('[data-testid=preview-previous-page-button]');
+    for (var n=0; pv && !pv.disabled && n<25; n++){ pv.click(); await sleep(180); pv = document.querySelector('[data-testid=preview-previous-page-button]'); }
+    await sleep(800);
+    var imgs = [], prev = '';
+    for (var i=1; i<=M; i++){
+      if (i>1){ for (var nav=0; nav<12; nav++){ if (current()>=i) break; var nx=document.querySelector('[data-testid=preview-next-page-button]'); if(nx) nx.click(); await sleep(700); } }
+      var pick = null;
+      for (var t=0; t<40; t++){ await sleep(400); var cand = grab().filter(function(o){ return o.len>50000 && o.d!==prev; }); if (cand.length){ cand.sort(function(a,b){ return b.len-a.len; }); pick=cand[0]; break; } }
+      if (!pick) break;
+      prev = pick.d; imgs.push(pick.d);
+    }
+    if (!imgs.length){ alert('Could not read the preview. Open your résumé so the page preview is visible, then click again.'); return; }
+    var w = window.open('', '_blank');
+    if (!w){ alert('Please allow pop-ups for resume.io and click again.'); return; }
+    var html = '<!doctype html><meta charset=utf-8><title>resume</title>' +
+      '<style>@page{size:A4;margin:0}html,body{margin:0}img{width:210mm;height:297mm;object-fit:contain;display:block;page-break-after:always}img:last-child{page-break-after:auto}</style>' +
+      imgs.map(function(d){ return '<img src="'+d+'">'; }).join('') +
+      '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},500);};<\/scr'+'ipt>';
+    w.document.open(); w.document.write(html); w.document.close();
+  } catch(e){ alert('Error: ' + e + '\nMake sure you are on your résumé page on resume.io.'); }
+}
+
+/* ===================== BOOKMARKLET 2: copy data for the vector tool (runs on resume.io) ============ */
+async function __grabData() {
+  try {
+    var m = location.pathname.match(/resumes\/(\d+)/);
+    var id = m ? m[1] : null;
+    if (!id){ var L = await (await fetch('/api/app/resumes', { credentials:'include' })).json(); id = (L.resumes && L.resumes[0] || {}).id; }
+    var txt = await (await fetch('/api/app/resumes/' + id, { credentials:'include' })).text();
+    await navigator.clipboard.writeText(txt);
+    alert('Copied your résumé data. Now switch to the PDF tool tab and paste it.');
+    window.open('https://shahinmv.github.io/resumeio2pdf/', '_blank');
+  } catch(e){ alert('Make sure you are logged into resume.io and on your résumé. ' + e); }
+}
+
+/* turn the functions into draggable bookmarklets (no manual escaping) */
+function bookmarklet(fn){ return 'javascript:(' + fn.toString().replace(/\s+/g,' ') + ')();void 0'; }
+var bmE = document.getElementById('bmExact'); bmE.setAttribute('href', bookmarklet(__grabExact));
+var bmD = document.getElementById('bmData'); bmD.setAttribute('href', bookmarklet(__grabData));
+[bmE, bmD].forEach(function(el){ el.addEventListener('click', function(e){ e.preventDefault(); alert('Drag this to your bookmarks bar (do not click it here). Then click it while on resume.io.'); }); });
+
+/* ===================== vector renderer (used by the paste flow on THIS page) ===================== */
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const isHTML=s=>typeof s==='string'&&/<\/?[a-z][\s\S]*>/i.test(s);
@@ -79,8 +137,6 @@ const dated=(l,rows)=>{rows=rows.filter(r=>r.title||r.body||r.date);return rows.
 const plain=(l,c)=>c&&c.trim()?`<section class="sec"><div class="label">${esc(l)}</div><div class="col2">${c}</div></section>`:'';
 const grid2=cs=>{cs=cs.filter(Boolean);return cs.length?`<div class="grid2">${cs.join('')}</div>`:'';};
 const TITLES={profile:'Profile',workExperiences:'Employment History',educations:'Education',socialProfiles:'Links',skills:'Skills',languages:'Languages',hobbies:'Hobbies',courses:'Courses',internships:'Internships',activities:'Extra-curricular Activities',conferences:'Conferences',volunteerings:'Volunteering',references:'References',awards:'Awards',publications:'Publications',accomplishments:'Accomplishments',licensesAndCertifications:'Certifications',affiliations:'Affiliations'};
-const DATED=new Set(['workExperiences','educations','courses','internships','activities','conferences','volunteerings','awards','publications']);
-
 function renderResume(j){
   const ST=j.sectionTitles||{};
   const T=k=>esc(ST[k]||TITLES[k]||k.replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase()));
@@ -107,30 +163,22 @@ function renderResume(j){
   const position=esc(j.position||j.jobTitle||'');
   const CSS=`@page{size:A4;margin:12mm 16mm}*{margin:0;padding:0;box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:'Tinos','Times New Roman',Times,serif;color:#1a1a1a;font-size:12px;line-height:1.34}a{color:${accent};text-decoration:none}.name{text-align:center;font-weight:700;font-size:17px;letter-spacing:.2px;color:${accent}}.position{text-align:center;font-size:12px;color:#333;margin-top:2px}.contact{text-align:center;font-size:11px;color:#333;margin:5px 0 4px}.sec{display:grid;grid-template-columns:23% 77%;column-gap:14px;border-top:1px solid #dcdcdc;padding-top:9px;margin-top:9px}.sec:first-of-type{margin-top:9px}.label{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:${accent};opacity:.92}.sec.dated>.label{grid-column:1/-1;margin-bottom:8px}.sec:not(.dated)>.label{grid-column:1}.col2{grid-column:2}.date{grid-column:1;font-size:10.5px;color:#555}.entry{grid-column:2;margin-bottom:13px;break-inside:avoid}.entry:last-child{margin-bottom:2px}.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.title{font-weight:700;font-size:14px;color:#1a1a1a}.place{font-size:11px;color:#555;white-space:nowrap}.body{margin-top:3px}.body ul{padding-left:15px;margin:2px 0}.body li{margin:2px 0;padding-left:2px}.body p{margin:2px 0}.links a{font-size:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:6px}.cell{font-size:12px}.cell.lang{display:flex;justify-content:space-between;gap:8px}.lvl{color:#555}.catname{font-weight:700;font-size:12px;margin:4px 0 2px}.ref{margin-bottom:6px}`;
   const body=`<div class="name">${esc(j.firstName)} ${esc(j.lastName)}</div>${position?`<div class="position">${position}</div>`:''}<div class="contact">${contact}</div>${linksHtml}${parts.join('')}`;
-  const name=`${(j.firstName||'resume')}_${(j.lastName||'')}`.replace(/\s+/g,'_');
-  return {css:CSS,body,name};
+  return {css:CSS,body};
 }
-
-// ---------- generate & print ----------
 function generate(){
   const st=document.getElementById('status'); st.className='status'; st.textContent='';
   let raw=document.getElementById('json').value.trim();
-  if(!raw){st.className='status err';st.textContent='Paste your résumé data first (step 2).';return;}
+  if(!raw){st.className='status err';st.textContent='Paste your résumé data first.';return;}
   let j; try{ j=JSON.parse(raw); if(j.resume) j=j.resume; if(Array.isArray(j.resumes)) j=j.resumes[0]; }catch(e){ st.className='status err'; st.textContent='That does not look like valid résumé JSON.'; return; }
   if(!j.firstName && !j.workExperiences && !j.educations){ st.className='status err'; st.textContent='Could not find résumé fields in that data.'; return; }
-  const {css,body,name}=renderResume(j);
-  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>${esc(name)}</title><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<script>window.onload=function(){if(document.fonts&&document.fonts.ready){document.fonts.ready.then(function(){setTimeout(function(){window.print();},300);});}else{setTimeout(function(){window.print();},800);}};<\/script></body></html>`;
+  const {css,body}=renderResume(j);
+  const doc=`<!doctype html><html><head><meta charset="utf-8"><title>resume</title><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"><style>${css}</style></head><body>${body}<scr`+`ipt>window.onload=function(){var go=function(){setTimeout(function(){window.print();},300);};if(document.fonts&&document.fonts.ready){document.fonts.ready.then(go);}else{setTimeout(go,800);}};<\/scr`+`ipt></body></html>`;
   const w=window.open('','_blank');
-  if(!w){ st.className='status err'; st.textContent='Pop-up blocked — allow pop-ups for this site and try again.'; return; }
+  if(!w){ st.className='status err'; st.textContent='Pop-up blocked — allow pop-ups and try again.'; return; }
   w.document.open(); w.document.write(doc); w.document.close();
   st.className='status ok'; st.textContent='Opened the print view — choose “Save as PDF”. ✓';
 }
 document.getElementById('go').addEventListener('click',generate);
-
-// ---------- bookmarklet (runs on resume.io, in the user's session) ----------
-const BM="javascript:(async()=>{try{var m=location.pathname.match(/resumes\\/(\\d+)/);var id=m?m[1]:null;if(!id){var L=await(await fetch('/api/app/resumes',{credentials:'include'})).json();id=(L.resumes&&L.resumes[0]||{}).id;}var t=await(await fetch('/api/app/resumes/'+id,{credentials:'include'})).text();await navigator.clipboard.writeText(t);alert('Copied your r\\u00e9sum\\u00e9 \\u2014 now paste it into the PDF tool tab.');window.open('https://shahinmv.github.io/resumeio2pdf/','_blank');}catch(e){alert('Make sure you are logged into resume.io. '+e);}})()";
-document.getElementById('bm').setAttribute('href', BM);
-document.getElementById('bm').addEventListener('click',e=>{e.preventDefault();alert('Drag this button to your bookmarks bar (do not click it here). Then click it while on resume.io.');});
 </script>
 </body>
 </html>
