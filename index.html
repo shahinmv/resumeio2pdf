@@ -71,6 +71,9 @@
 <script>
 /* ===================== BOOKMARKLET 1: pixel-exact capture (runs on resume.io) ===================== */
 async function __grabExact() {
+  // open the tool tab IMMEDIATELY (inside the click gesture) so the pop-up isn't blocked
+  // and the user gets instant feedback; capture happens after, then we postMessage to it.
+  var w = window.open('https://shahinmv.github.io/resumeio2pdf/?mode=exact', '_blank');
   try {
     var sleep = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
     var counterEl = function(){ return document.querySelector('[data-testid=preview-page-counter]'); };
@@ -93,15 +96,15 @@ async function __grabExact() {
       if (!pick) break;
       prev = pick.d; imgs.push(pick.d);
     }
-    if (!imgs.length){ alert('Could not read the preview. Open your résumé so the page preview is visible, then click again.'); return; }
-    // hand the captured pages to the tool, which OCRs them into a searchable PDF
-    var w = window.open('https://shahinmv.github.io/resumeio2pdf/', '_blank');
-    if (!w){ alert('Please allow pop-ups and click again.'); return; }
+    if (!imgs.length){ if(w&&!w.closed){try{w.close();}catch(e){}} alert('Could not read your résumé preview. Make sure the résumé preview is visible on this page, then click the bookmark again.'); return; }
+    if (!w){ alert('Pop-up was blocked. Allow pop-ups for resume.io, then click the bookmark again.'); return; }
+    // send the captured pages to the already-open tool tab (retry until it acknowledges)
     var sent = false;
     var send = function(){ try { w.postMessage({ __resumeExact: imgs }, 'https://shahinmv.github.io'); } catch(e){} };
-    var iv = setInterval(function(){ if (sent){ clearInterval(iv); return; } send(); }, 600);
     window.addEventListener('message', function(e){ if (e.data === '__resumeExactGot'){ sent = true; clearInterval(iv); } });
-    setTimeout(function(){ clearInterval(iv); }, 20000);
+    var iv = setInterval(function(){ if (sent){ clearInterval(iv); return; } send(); }, 500);
+    send();
+    setTimeout(function(){ clearInterval(iv); }, 25000);
   } catch(e){ alert('Error: ' + e + '\nMake sure you are on your résumé page on resume.io.'); }
 }
 
@@ -252,6 +255,8 @@ async function buildExactOCR(imgs){
   }catch(err){ set('OCR failed: '+err+'. Try again, or use Vector mode.','err'); }
   finally{ __exactBusy=false; }
 }
+// instant feedback when opened by the Exact bookmarklet
+if(/[?&]mode=exact/.test(location.search)){ const st=document.getElementById('status'); if(st){ st.className='status'; st.textContent='⏳ Waiting for your résumé pages from resume.io… keep that tab open (capture + OCR takes ~20–30 s).'; try{ st.scrollIntoView({block:'center'}); }catch(e){} } }
 </script>
 </body>
 </html>
