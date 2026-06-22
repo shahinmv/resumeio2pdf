@@ -38,13 +38,13 @@
   <p class="sub">Export your own résumé as a multi-page PDF — free. Everything runs in your browser; your data never leaves your device and there's no login here.</p>
 
   <div class="card">
-    <span class="tag rec">Pixel-exact · any template · no paste</span>
+    <span class="tag rec">Pixel-exact · any template · searchable text</span>
     <h2>📸 Exact copy of your template</h2>
-    <p class="desc">Captures your résumé exactly as resume.io shows it, every page. The crispness matches your screen (sharpest on a high-DPI/Retina display).</p>
+    <p class="desc">Captures your résumé exactly as resume.io shows it (any template, every page), then adds a searchable / ATS-readable text layer via in-browser OCR. Crispness matches your screen (sharpest on a high-DPI/Retina display).</p>
     <ol>
       <li>Drag this to your bookmarks bar (once): <a class="bm green" id="bmExact" href="#">📸 Exact résumé PDF</a></li>
       <li>Open your résumé on <b>resume.io</b> so the preview is visible, then click the bookmark.</li>
-      <li>It opens a print view — choose <b>“Save as PDF”</b>. Done.</li>
+      <li>This tool opens and reads the text (OCR, ~10–20 s), then a print view appears — choose <b>“Save as PDF”</b>.</li>
     </ol>
   </div>
 
@@ -94,13 +94,14 @@ async function __grabExact() {
       prev = pick.d; imgs.push(pick.d);
     }
     if (!imgs.length){ alert('Could not read the preview. Open your résumé so the page preview is visible, then click again.'); return; }
-    var w = window.open('', '_blank');
-    if (!w){ alert('Please allow pop-ups for resume.io and click again.'); return; }
-    var html = '<!doctype html><meta charset=utf-8><title>resume</title>' +
-      '<style>@page{size:A4;margin:0}html,body{margin:0}img{width:210mm;height:297mm;object-fit:contain;display:block;page-break-after:always}img:last-child{page-break-after:auto}</style>' +
-      imgs.map(function(d){ return '<img src="'+d+'">'; }).join('') +
-      '<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},500);};<\/scr'+'ipt>';
-    w.document.open(); w.document.write(html); w.document.close();
+    // hand the captured pages to the tool, which OCRs them into a searchable PDF
+    var w = window.open('https://shahinmv.github.io/resumeio2pdf/', '_blank');
+    if (!w){ alert('Please allow pop-ups and click again.'); return; }
+    var sent = false;
+    var send = function(){ try { w.postMessage({ __resumeExact: imgs }, 'https://shahinmv.github.io'); } catch(e){} };
+    var iv = setInterval(function(){ if (sent){ clearInterval(iv); return; } send(); }, 600);
+    window.addEventListener('message', function(e){ if (e.data === '__resumeExactGot'){ sent = true; clearInterval(iv); } });
+    setTimeout(function(){ clearInterval(iv); }, 20000);
   } catch(e){ alert('Error: ' + e + '\nMake sure you are on your résumé page on resume.io.'); }
 }
 
@@ -213,6 +214,44 @@ function generate(){
   st.className='status ok'; st.textContent='Opened the print view — choose “Save as PDF”. ✓';
 }
 document.getElementById('go').addEventListener('click',generate);
+
+/* ===================== Exact mode: receive captured pages -> OCR -> searchable PDF ===================== */
+let __exactBusy=false;
+window.addEventListener('message', async (e)=>{
+  const d=e.data; if(!d || !d.__resumeExact || __exactBusy) return;
+  __exactBusy=true;
+  try{ if(e.source) e.source.postMessage('__resumeExactGot','*'); }catch(_){}
+  await buildExactOCR(d.__resumeExact);
+});
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed: '+src));document.head.appendChild(s);});}
+function imgSize(u){return new Promise(res=>{const im=new Image();im.onload=()=>res({w:im.naturalWidth,h:im.naturalHeight});im.src=u;});}
+async function buildExactOCR(imgs){
+  const st=document.getElementById('status'); const set=(m,c)=>{st.className='status '+(c||'');st.textContent=m;};
+  try{
+    set('Loading OCR engine (one-time, ~2–3 MB)…');
+    if(typeof Tesseract==='undefined') await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+    const pages=[];
+    for(let i=0;i<imgs.length;i++){
+      set('Reading page '+(i+1)+'/'+imgs.length+' — OCR can take ~10–20 s…');
+      const dim=await imgSize(imgs[i]);
+      const res=await Tesseract.recognize(imgs[i],'eng');
+      const words=(res.data.words||[]).filter(w=>w.text&&w.text.trim()&&w.bbox);
+      pages.push({img:imgs[i],w:dim.w,h:dim.h,words});
+    }
+    set('Building PDF…','ok');
+    const pageHtml=pages.map(p=>{
+      const sc=210/p.w;
+      const spans=p.words.map(w=>{const b=w.bbox;return '<span class="w" style="left:'+(b.x0*sc).toFixed(2)+'mm;top:'+(b.y0*sc).toFixed(2)+'mm;font-size:'+Math.max(1,(b.y1-b.y0)*sc).toFixed(2)+'mm;width:'+((b.x1-b.x0)*sc).toFixed(2)+'mm">'+esc(w.text)+'</span>';}).join('');
+      return '<div class="pg"><img src="'+p.img+'">'+spans+'</div>';
+    }).join('');
+    const doc='<!doctype html><meta charset=utf-8><title>resume</title><style>@page{size:A4;margin:0}html,body{margin:0}.pg{position:relative;width:210mm;height:297mm;overflow:hidden;page-break-after:always}.pg:last-child{page-break-after:auto}.pg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.w{position:absolute;color:transparent;white-space:pre;overflow:hidden;line-height:1}</style>'+pageHtml+'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);};<\/scr'+'ipt>';
+    const w=window.open('','_blank');
+    if(!w){ set('Pop-up blocked — allow pop-ups for this site, then click the bookmarklet again.','err'); return; }
+    w.document.open(); w.document.write(doc); w.document.close();
+    set('Done — choose “Save as PDF”. Exact look + searchable text ✓','ok');
+  }catch(err){ set('OCR failed: '+err+'. Try again, or use Vector mode.','err'); }
+  finally{ __exactBusy=false; }
+}
 </script>
 </body>
 </html>
