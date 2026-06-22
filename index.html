@@ -59,6 +59,7 @@
     </ol>
     <textarea id="json" placeholder="Paste your résumé data here…"></textarea>
     <button id="go">Download vector PDF</button>
+    <button id="printBtn" style="display:none;background:#54d18c">Print / Save PDF</button>
     <div class="status" id="status"></div>
   </div>
 
@@ -247,11 +248,14 @@ async function buildExactOCR(imgs){
       const spans=p.words.map(w=>{const b=w.bbox;return '<span class="w" style="left:'+(b.x0*sc).toFixed(2)+'mm;top:'+(b.y0*sc).toFixed(2)+'mm;font-size:'+Math.max(1,(b.y1-b.y0)*sc).toFixed(2)+'mm;width:'+((b.x1-b.x0)*sc).toFixed(2)+'mm">'+esc(w.text)+'</span>';}).join('');
       return '<div class="pg"><img src="'+p.img+'">'+spans+'</div>';
     }).join('');
-    const doc='<!doctype html><meta charset=utf-8><title>resume</title><style>@page{size:A4;margin:0}html,body{margin:0}.pg{position:relative;width:210mm;height:297mm;overflow:hidden;page-break-after:always}.pg:last-child{page-break-after:auto}.pg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.w{position:absolute;color:transparent;white-space:pre;overflow:hidden;line-height:1}</style>'+pageHtml+'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},400);};<\/scr'+'ipt>';
-    const w=window.open('','_blank');
-    if(!w){ set('Pop-up blocked — allow pop-ups for this site, then click the bookmarklet again.','err'); return; }
-    w.document.open(); w.document.write(doc); w.document.close();
-    set('Done — choose “Save as PDF”. Exact look + searchable text ✓','ok');
+    const doc='<!doctype html><meta charset=utf-8><title>resume</title><style>@page{size:A4;margin:0}html,body{margin:0}.pg{position:relative;width:210mm;height:297mm;overflow:hidden;page-break-after:always}.pg:last-child{page-break-after:auto}.pg>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.w{position:absolute;color:transparent;white-space:pre;overflow:hidden;line-height:1}</style>'+pageHtml+'<scr'+'ipt>window.onload=function(){setTimeout(function(){try{window.focus();}catch(e){} window.print();},500);};<\/scr'+'ipt>';
+    // print via a hidden iframe (no window.open -> not pop-up-blocked after async OCR)
+    var old=document.getElementById('__printfr'); if(old) old.remove();
+    var ifr=document.createElement('iframe'); ifr.id='__printfr'; ifr.style.cssText='position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';
+    document.body.appendChild(ifr);
+    var dd=ifr.contentDocument||ifr.contentWindow.document; dd.open(); dd.write(doc); dd.close();
+    set('Done ✓ — the print dialog opens; choose “Save as PDF”. (If nothing appears, click “Print / Save PDF” below.)','ok');
+    var btn=document.getElementById('printBtn'); if(btn){ btn.style.display='inline-block'; btn.onclick=function(){ try{ifr.contentWindow.focus(); ifr.contentWindow.print();}catch(e){} }; }
   }catch(err){ set('OCR failed: '+err+'. Try again, or use Vector mode.','err'); }
   finally{ __exactBusy=false; }
 }
